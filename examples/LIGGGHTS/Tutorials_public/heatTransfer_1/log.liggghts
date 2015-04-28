@@ -1,0 +1,236 @@
+LIGGGHTS (Version LIGGGHTS-MASTER 3.1.0plusplus, compiled 2015-04-28-20:40:56 by kloss, git commit be5a4c6a3108e59a72889f96e842ba155da2c52f based on LAMMPS 23 Nov 2013)
+#Heat transfer example
+
+atom_style	granular
+atom_modify	map array
+boundary	m m m
+newton		off
+
+communicate	single vel yes
+
+units		si
+
+region		reg block -0.05 0.05 -0.05 0.05 0. 0.15 units box
+create_box	1 reg
+Created orthogonal box = (-0.05 -0.05 0) to (0.05 0.05 0.15)
+  1 by 2 by 2 MPI processor grid
+
+neighbor	0.002 bin
+neigh_modify	delay 0
+
+#Material properties required for new pair styles
+
+fix 		m1 all property/global youngsModulus peratomtype 5.e6
+fix 		m2 all property/global poissonsRatio peratomtype 0.45
+fix 		m3 all property/global coefficientRestitution peratomtypepair 1 0.7
+fix 		m4 all property/global coefficientFriction peratomtypepair 1 0.05
+#fix 		m5 all property/global characteristicVelocity scalar 2.
+
+
+#New pair style
+pair_style gran model hertz tangential history #Hertzian without cohesion
+==== PAIR SETTINGS ====
+ limitForce = off
+ tangential_damping = on
+==== PAIR SETTINGS ====
+pair_coeff	* *
+
+timestep	0.000025
+
+fix		gravi all gravity 9.81 vector 0.0 0.0 -1.0
+
+fix zwalls1 all wall/gran model hertz tangential history primitive type 1  zplane 0.0
+==== WALL zwalls1 SETTINGS ====
+ limitForce = off
+ tangential_damping = on
+==== WALL zwalls1 SETTINGS ====
+fix zwalls2 all wall/gran model hertz tangential history primitive type 1  zplane 0.15
+==== WALL zwalls2 SETTINGS ====
+ limitForce = off
+ tangential_damping = on
+==== WALL zwalls2 SETTINGS ====
+fix cylwalls all wall/gran model hertz tangential history primitive type 1  zcylinder 0.05 0. 0.
+==== WALL cylwalls SETTINGS ====
+ limitForce = off
+ tangential_damping = on
+==== WALL cylwalls SETTINGS ====
+
+#heat transfer
+fix 		ftco all property/global thermalConductivity peratomtype 100.
+fix 		ftca all property/global thermalCapacity peratomtype 10.
+fix             heattransfer all heat/gran initial_temperature 300.
+
+#region of insertion
+region		bc cylinder z 0. 0. 0.045 0.00 0.15 units box
+
+#particle distributions and insertion
+fix		pts1 all particletemplate/sphere 1 atom_type 1 density constant 8000 radius constant 0.004
+fix		pdd1 all particledistribution/discrete 1.  1 pts1 1.0
+
+fix		ins all insert/pack seed 100001 distributiontemplate pdd1 vel constant 0. 0. -0.3 		insert_every once overlapcheck yes all_in yes volumefraction_region 0.25 region bc
+
+#apply nve integration to all particles
+fix		integr all nve/sphere
+
+#output settings, include total thermal energy
+compute		rke all erotate/sphere
+thermo_style	custom step atoms ke c_rke f_heattransfer vol
+thermo		1000
+thermo_modify	lost ignore norm no
+compute_modify	thermo_temp dynamic yes
+
+#insert the first particles so that dump is not empty
+run		1
+==== PAIR GLOBAL PROPERTIES ====
+ poissonsRatio = [0.45]
+ youngsModulus = [5e+06]
+ Geff = [556174]
+ Yeff = [3.1348e+06]
+ betaeff = [-0.112808]
+ coeffFrict = [0.05]
+ coefficientRestitution = [0.7]
+ coefficientRestitutionLog = [-0.356675]
+==== PAIR GLOBAL PROPERTIES ====
+==== WALL zwalls1 GLOBAL PROPERTIES ====
+ poissonsRatio = [0.45]
+ youngsModulus = [5e+06]
+ Geff = [556174]
+ Yeff = [3.1348e+06]
+ betaeff = [-0.112808]
+ coeffFrict = [0.05]
+ coefficientRestitution = [0.7]
+ coefficientRestitutionLog = [-0.356675]
+==== WALL zwalls1 GLOBAL PROPERTIES ====
+==== WALL zwalls2 GLOBAL PROPERTIES ====
+ poissonsRatio = [0.45]
+ youngsModulus = [5e+06]
+ Geff = [556174]
+ Yeff = [3.1348e+06]
+ betaeff = [-0.112808]
+ coeffFrict = [0.05]
+ coefficientRestitution = [0.7]
+ coefficientRestitutionLog = [-0.356675]
+==== WALL zwalls2 GLOBAL PROPERTIES ====
+==== WALL cylwalls GLOBAL PROPERTIES ====
+ poissonsRatio = [0.45]
+ youngsModulus = [5e+06]
+ Geff = [556174]
+ Yeff = [3.1348e+06]
+ betaeff = [-0.112808]
+ coeffFrict = [0.05]
+ coefficientRestitution = [0.7]
+ coefficientRestitutionLog = [-0.356675]
+==== WALL cylwalls GLOBAL PROPERTIES ====
+INFO: Particle insertion ins: inserting every 0 steps
+Memory usage per processor = 4.27948 Mbytes
+Step Atoms KinEng rke heattran Volume 
+       0        0           -0            0            0       0.0015 
+INFO: Particle insertion ins: inserted 890 particle templates (mass 1.908748) at step 1
+ - a total of 890 particle templates (mass 1.908748) inserted so far.
+       1      890  0.085963889            0    5726.2438       0.0015 
+Loop time of 1.49765 on 4 procs for 1 steps with 890 atoms
+
+Pair  time (%) = 0.00534725 (0.357042)
+Neigh time (%) = 0.0250987 (1.67587)
+Comm  time (%) = 0.0645186 (4.30798)
+Outpt time (%) = 0.021051 (1.4056)
+Other time (%) = 1.38164 (92.2535)
+
+Nlocal:    222.5 ave 224 max 221 min
+Histogram: 1 0 0 1 0 0 1 0 0 1
+Nghost:    88.5 ave 92 max 86 min
+Histogram: 2 0 0 0 0 0 1 0 0 1
+Neighs:    363.5 ave 373 max 354 min
+Histogram: 2 0 0 0 0 0 0 0 0 2
+
+Total # of neighbors = 1454
+Ave neighs/atom = 1.63371
+Neighbor list builds = 1
+Dangerous builds = 0
+dump		dmp all custom 800 post/dump*.heatGran id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius f_Temp[0] f_heatFlux[0]
+unfix		ins
+
+#let the particles settle
+run		20000 upto
+==== PAIR GLOBAL PROPERTIES ====
+ poissonsRatio = [0.45]
+ youngsModulus = [5e+06]
+ Geff = [556174]
+ Yeff = [3.1348e+06]
+ betaeff = [-0.112808]
+ coeffFrict = [0.05]
+ coefficientRestitution = [0.7]
+ coefficientRestitutionLog = [-0.356675]
+==== PAIR GLOBAL PROPERTIES ====
+==== WALL zwalls1 GLOBAL PROPERTIES ====
+ poissonsRatio = [0.45]
+ youngsModulus = [5e+06]
+ Geff = [556174]
+ Yeff = [3.1348e+06]
+ betaeff = [-0.112808]
+ coeffFrict = [0.05]
+ coefficientRestitution = [0.7]
+ coefficientRestitutionLog = [-0.356675]
+==== WALL zwalls1 GLOBAL PROPERTIES ====
+==== WALL zwalls2 GLOBAL PROPERTIES ====
+ poissonsRatio = [0.45]
+ youngsModulus = [5e+06]
+ Geff = [556174]
+ Yeff = [3.1348e+06]
+ betaeff = [-0.112808]
+ coeffFrict = [0.05]
+ coefficientRestitution = [0.7]
+ coefficientRestitutionLog = [-0.356675]
+==== WALL zwalls2 GLOBAL PROPERTIES ====
+==== WALL cylwalls GLOBAL PROPERTIES ====
+ poissonsRatio = [0.45]
+ youngsModulus = [5e+06]
+ Geff = [556174]
+ Yeff = [3.1348e+06]
+ betaeff = [-0.112808]
+ coeffFrict = [0.05]
+ coefficientRestitution = [0.7]
+ coefficientRestitutionLog = [-0.356675]
+==== WALL cylwalls GLOBAL PROPERTIES ====
+Memory usage per processor = 8.40743 Mbytes
+Step Atoms KinEng rke heattran Volume 
+       1      890  0.085963889            0    5726.2438       0.0015 
+    1000      890   0.24489604 0.00032878818    5726.2438       0.0015 
+    2000      890    0.4149075 0.0010350493    5726.2438       0.0015 
+    3000      890   0.49659494   0.00217733    5726.2438       0.0015 
+    4000      890   0.30903658 0.0040154894    5726.2438       0.0015 
+    5000      890  0.027642687 0.0031452536    5726.2438       0.0015 
+    6000      890 0.0064608044 0.0017275455    5726.2438       0.0015 
+    7000      890 0.0058845409 0.0011084236    5726.2438       0.0015 
+    8000      890 0.0033969323 0.00062517961    5726.2438       0.0015 
+    9000      890 0.0017662706 0.00037578255    5726.2438       0.0015 
+   10000      890 0.00072263739 0.00023275087    5726.2438       0.0015 
+   11000      890 0.00030837881 0.00012784645    5726.2438       0.0015 
+   12000      890 0.00015027351 7.3356961e-05    5726.2438       0.0015 
+   13000      890 0.00013622824 4.5298251e-05    5726.2438       0.0015 
+   14000      890 5.2760547e-05 2.8314769e-05    5726.2438       0.0015 
+   15000      890 3.8909558e-05 2.0210298e-05    5726.2438       0.0015 
+   16000      890 8.6684369e-05 1.6043742e-05    5726.2438       0.0015 
+   17000      890 2.9345048e-05 1.118103e-05    5726.2438       0.0015 
+   18000      890 2.478922e-05 9.8540394e-06    5726.2438       0.0015 
+   19000      890 2.1836715e-05 9.2266176e-06    5726.2438       0.0015 
+   20000      890 1.3294193e-05 7.3728221e-06    5726.2438       0.0015 
+Loop time of 551.364 on 4 procs for 19999 steps with 890 atoms
+
+Pair  time (%) = 169.841 (30.8037)
+Neigh time (%) = 1.2388 (0.22468)
+Comm  time (%) = 63.8423 (11.579)
+Outpt time (%) = 9.47296 (1.7181)
+Other time (%) = 306.969 (55.6745)
+
+Nlocal:    222.5 ave 452 max 0 min
+Histogram: 2 0 0 0 0 0 0 0 0 2
+Nghost:    57.5 ave 116 max 0 min
+Histogram: 2 0 0 0 0 0 0 0 0 2
+Neighs:    1079.25 ave 2193 max 0 min
+Histogram: 2 0 0 0 0 0 0 0 0 2
+
+Total # of neighbors = 4317
+Ave neighs/atom = 4.85056
+Neighbor list builds = 191
+Dangerous builds = 0
