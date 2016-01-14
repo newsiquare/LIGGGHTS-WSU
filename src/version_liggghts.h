@@ -1,1 +1,1 @@
-#define LIGGGHTS_VERSION "LIGGGHTS-WSU 3.3.0, compiled 2015-09-22-19:35:26 by kloss, git commit 021e16291adbda76c81117d727a0969544934b7e"
+#define LIGGGHTS_VERSION "LIGGGHTS-WSU 3.3.1, compiled 2016-01-14-14:36:40 by kloss, git commit afceb0c8d5cf2302a23d8f65c1b37eceddf0d3d0"
