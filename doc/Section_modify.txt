@@ -1,4 +1,4 @@
-"Previous Section"_Section_howto.html - "LIGGGHTS(R)-WSU WWW Site"_lws - "LIGGGHTS(R)-WSU Documentation"_ld - "LIGGGHTS(R)-WSU Commands"_lc - "Next Section"_Section_python.html :c
+"Previous Section"_Section_howto.html - "LIGGGHTS(R)-WSU WWW Site"_liws - "LIGGGHTS(R)-WSU Documentation"_ld - "LIGGGHTS(R)-WSU Commands"_lc - "Next Section"_Section_python.html :c
 
 :link(liws,http://www.cfdem.com)
 :link(ld,Manual.html)
